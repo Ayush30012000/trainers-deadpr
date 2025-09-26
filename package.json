@@ -1,0 +1,19 @@
+{
+  "name": "trainers-deadpr",
+  "version": "1.0.0",
+  "description": "Fit Connect",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ayush30012000/FitConnect.git"
+  },
+  "author": "Ayush",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ayush30012000/FitConnect/issues"
+  },
+  "homepage": "https://github.com/Ayush30012000/FitConnect#readme"
+}
