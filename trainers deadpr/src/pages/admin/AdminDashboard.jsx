@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Users, UserCheck, UserX, Clock, LogOut } from 'lucide-react';
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const AdminDashboard = () => {
   const [trainers, setTrainers] = useState([]);

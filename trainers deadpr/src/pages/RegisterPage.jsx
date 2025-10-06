@@ -67,7 +67,7 @@ const RegisterPage = () => {
       body.append("profilePicture", formData.profilePictureFile);
     }
 
-    const res = await fetch(`http://localhost:5000/api/trainers`, {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/trainers`, {
       method: "POST",
       body,
       // don't set Content-Type, browser sets it for multipart/form-data
