@@ -21,7 +21,7 @@ const TrainerCard = ({ trainer, index }) => {
             <img  
               className="w-full h-48 object-cover" 
               alt={`${trainer.fullName} - ${trainer.category}`}
-             src="https://images.unsplash.com/photo-1597460832848-d9e03d287ace" />
+             src={trainer.profilePictureUrl || "https://images.unsplash.com/photo-1597460832848-d9e03d287ace"} />
             <div className="absolute top-4 right-4">
               <Badge 
                 variant="secondary" 

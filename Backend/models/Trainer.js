@@ -9,7 +9,7 @@ const TrainerSchema = new mongoose.Schema({
   experience: { type: String },
   location: { type: String },
   bio: { type: String },
-  profilePictureUrl: { type: String }, // e.g. /uploads/filename.jpg
+  profilePictureUrl: { type: String }, 
   status: { type: String, default: 'pending' },
   registeredAt: { type: Date, default: Date.now },
   metadata: { type: Object, default: {} }

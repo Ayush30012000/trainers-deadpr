@@ -20,7 +20,7 @@ const HomePage = () => {
       
       const trainersRes=await  fetch(`${API_BASE}/api/trainersData`);
       const trainersData = await trainersRes.json();
-      setAllTrainers(trainersData);
+      setAllTrainers(trainersData?.trainers || []);
     } catch (err) {
       console.error(err);
       toast({

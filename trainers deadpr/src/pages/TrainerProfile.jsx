@@ -71,7 +71,7 @@ const TrainerProfile = () => {
                   <img  
                     className="w-full max-w-sm mx-auto rounded-2xl shadow-2xl" 
                     alt={`${trainer?.fullName} - Professional ${trainer?.category}`}
-                   src="https://images.unsplash.com/photo-1618355281346-66ac1663917d" />
+                   src={trainer.profilePictureUrl || "https://images.unsplash.com/photo-1618355281346-66ac1663917d"} />
                 </div>
                 
                 <div className="lg:col-span-2 space-y-6">

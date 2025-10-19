@@ -2,20 +2,24 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const Trainer = require('../models/Trainer');
+const ImageKit = require('imagekit');
 
 const router = express.Router();
 
-// configure multer storage to ./uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '..', 'uploads'));
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    const basename = path.basename(file.originalname, ext).replace(/\s+/g, '-');
-    cb(null, `${Date.now()}-${basename}${ext}`);
-  }
+// Initialize ImageKit
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
 });
+
+// Validate ImageKit configuration on startup
+if (!process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY || !process.env.IMAGEKIT_URL_ENDPOINT) {
+  console.warn('ImageKit credentials not properly configured. Image upload will be disabled.');
+}
+
+// configure multer storage to memory (for ImageKit upload)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -55,8 +59,36 @@ router.post('/', upload.single('profilePicture'), async (req, res) => {
     if (existing) {
       return res.status(409).json({ message: 'A trainer with this email already exists.' });
     }
+    
+    let profilePictureUrl = undefined;
 
-    const profilePictureUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+    // Upload image to ImageKit if file is provided
+    if (req.file) {
+
+      // Check if ImageKit is properly configured
+      if (!process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY || !process.env.IMAGEKIT_URL_ENDPOINT) {
+        console.warn('ImageKit not configured, skipping image upload');
+      } else {
+        try {
+          const uploadResult = await imagekit.upload({
+            file: req.file.buffer, // Use buffer from memory storage
+            fileName: `trainer-${Date.now()}-${req.file.originalname}`,
+            folder: '/trainers', // Optional: organize images in folders
+            tags: ['trainer', 'profile', category], // Add relevant tags
+            useUniqueFileName: true,
+            responseFields: ['isPrivateFile', 'tags', 'customCoordinates']
+          });
+
+          profilePictureUrl = uploadResult.url;
+          console.log('Image uploaded to ImageKit successfully:', uploadResult.url);
+        } catch (uploadError) {
+          console.error('ImageKit upload error:', uploadError);
+          console.error('Error details:', uploadError.message);
+          // Continue without image instead of failing completely
+          console.log('Continuing registration without image...');
+        }
+      }
+    }
 
     const trainer = new Trainer({
       fullName,
@@ -80,6 +112,18 @@ router.post('/', upload.single('profilePicture'), async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
+
+// GET /api/trainers - Get all trainers
+router.get('/', async (req, res) => {
+  try {
+    const trainers = await Trainer.find().sort({ registeredAt: -1 });
+    return res.json({ trainers });
+  } catch (err) {
+    console.error('Error fetching trainers:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 router.patch('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -102,6 +146,21 @@ router.patch('/:id', async (req, res) => {
     return res.json({ message: "Trainer status updated", trainer: updatedTrainer });
   } catch (err) {
     console.error("Error updating trainer status:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedTrainer = await Trainer.findByIdAndDelete(id);
+
+    if (!deletedTrainer) {
+      return res.status(404).json({ message: "Trainer not found." });
+    }
+    return res.json({ message: "Trainer deleted successfully." });
+  } catch (err) {
+    console.error("Error deleting trainer:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 });

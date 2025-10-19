@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Upload, UserPlus, CheckCircle, Award } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 const RegisterPage = () => {
   const { toast } = useToast();
@@ -21,8 +22,11 @@ const RegisterPage = () => {
     experience: '',
     location: '',
     bio: '',
-    profilePictureName: ''
+    profilePictureName: '',
+    profilePictureFile: null
   });
+
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -31,13 +35,69 @@ const RegisterPage = () => {
     }));
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData(prev => ({
-        ...prev,
-        profilePictureName: file.name
-      }));
+      // Check file size before compression
+      const fileSizeMB = file.size / 1024 / 1024;
+      console.log(`Original file size: ${fileSizeMB.toFixed(2)} MB`);
+
+      if (fileSizeMB > 10) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 10MB",
+          variant: "destructive",
+          duration: 4000,
+        });
+        return;
+      }
+
+      setIsCompressing(true);
+      
+      try {
+        // Compression options
+        const options = {
+          maxSizeMB: 1, // Maximum file size in MB
+          maxWidthOrHeight: 1920, // Maximum width or height
+          useWebWorker: true,
+          initialQuality: 0.8 // Initial quality (0.1 to 1)
+        };
+
+        console.log('Compressing image...');
+        const compressedFile = await imageCompression(file, options);
+        
+        const compressedSizeMB = compressedFile.size / 1024 / 1024;
+        console.log(`Compressed file size: ${compressedSizeMB.toFixed(2)} MB`);
+
+        setFormData(prev => ({
+          ...prev,
+          profilePictureName: file.name,
+          profilePictureFile: compressedFile
+        }));
+
+        toast({
+          title: "Image compressed successfully",
+          description: `File size reduced from ${fileSizeMB.toFixed(2)}MB to ${compressedSizeMB.toFixed(2)}MB`,
+          duration: 3000,
+        });
+      } catch (error) {
+        console.error('Compression failed:', error);
+        toast({
+          title: "Compression failed",
+          description: "Using original file. Please try a smaller image.",
+          variant: "destructive",
+          duration: 4000,
+        });
+        
+        // Use original file if compression fails
+        setFormData(prev => ({
+          ...prev,
+          profilePictureName: file.name,
+          profilePictureFile: file
+        }));
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -258,10 +318,22 @@ const RegisterPage = () => {
                       <div className="mt-2">
                         <label htmlFor="profilePicture" className="flex items-center justify-center w-full h-32 border-2 border-dashed border-white/30 rounded-lg cursor-pointer hover:border-white/50 transition-colors glass-effect">
                           <div className="text-center">
-                            <Upload className="h-8 w-8 text-white/60 mx-auto mb-2" />
-                            <p className="text-white/60 text-sm">
-                              {formData.profilePictureName ? formData.profilePictureName : 'Click to upload profile picture'}
-                            </p>
+                            {isCompressing ? (
+                              <>
+                                <div className="animate-spin h-8 w-8 border-2 border-white/60 border-t-transparent rounded-full mx-auto mb-2"></div>
+                                <p className="text-white/60 text-sm">Compressing image...</p>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-8 w-8 text-white/60 mx-auto mb-2" />
+                                <p className="text-white/60 text-sm">
+                                  {formData.profilePictureName ? formData.profilePictureName : 'Click to upload profile picture'}
+                                </p>
+                                <p className="text-white/40 text-xs mt-1">
+                                  Images will be automatically compressed
+                                </p>
+                              </>
+                            )}
                           </div>
                         </label>
                         <input
@@ -269,6 +341,7 @@ const RegisterPage = () => {
                           type="file"
                           accept="image/*"
                           onChange={handleFileChange}
+                          disabled={isCompressing}
                           className="hidden"
                         />
                       </div>
@@ -278,9 +351,10 @@ const RegisterPage = () => {
                   <div className="pt-6">
                     <Button 
                       type="submit"
-                      className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 py-3 text-lg"
+                      disabled={isCompressing}
+                      className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Submit Registration
+                      {isCompressing ? 'Processing...' : 'Submit Registration'}
                     </Button>
                   </div>
                 </form>

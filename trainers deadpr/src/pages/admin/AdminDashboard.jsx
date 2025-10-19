@@ -31,10 +31,10 @@ const AdminDashboard = () => {
 
       //console.log(trainersRes.json())
       const trainersData = await trainersRes.value.json();
-      //const blacklistData = await blacklistRes.json() || [];
+      const blacklistData = await blacklistRes.value.json() || [];
 
-      setTrainers(trainersData);
-      //setBlacklistedTrainers(blacklistData);
+      setTrainers(trainersData?.trainers || []);
+      setBlacklistedTrainers(blacklistData?.trainers || []);
     } catch (err) {
       console.error(err);
       toast({
